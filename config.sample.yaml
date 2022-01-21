@@ -1,0 +1,4 @@
+db_path: "sentiment.db"
+bind: "127.0.0.1:8080"
+track_tweets: ["rustlang"]
+default_alpha: 0.995

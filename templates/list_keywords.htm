@@ -1,0 +1,12 @@
+<html>
+<body>
+	<center>
+		<h3>Available keywords</h3>
+		<div>
+			{% for keyword in keywords %}
+			<a href="/svg/{{ keyword }}/ema">{{ keyword }}</a><br>
+			{% endfor %}
+		</div>
+	</center>
+</body>	
+</html>
