@@ -8,10 +8,7 @@ use egg_mode::{search::ResultType, stream::StreamMessage, Token};
 use futures::StreamExt;
 use rust_bert::pipelines::sentiment::{Sentiment, SentimentModel, SentimentPolarity};
 
-use crate::{
-	database::{self},
-	SentimentDB,
-};
+use crate::database::{self, SentimentDB};
 
 fn sentiment_to_float(sentiment: &Sentiment) -> f64 {
 	match sentiment.polarity {
@@ -38,7 +35,7 @@ impl TwitterStreamRunner {
 	/// If the database for a keyword is empty, fill it with some search results
 	pub async fn save_search_results(&self) -> Result<()> {
 		for keyword in self.streams.iter() {
-			if self.db.exists(keyword)? {
+			if self.db.exists(keyword).await? {
 				continue;
 			}
 
@@ -53,15 +50,18 @@ impl TwitterStreamRunner {
 					.await?;
 
 			for tweet in tweets.response {
-				let author = tweet.user.expect("no tweet author").name;
-				let text = tweet.text;
-				let sentiment = self.sentiment_classifier.predict(&[text.as_str()]);
+				let id = tweet.id;
+				let created = tweet.created_at.timestamp();
+				let sentiment = self.sentiment_classifier.predict(&[tweet.text.as_str()]);
 
-				let mut entry =
-					database::Entry::new(author, text, sentiment_to_float(&sentiment[0]));
-				entry.set_timestamp(tweet.created_at.timestamp());
+				let entry = database::TweetSentiment::new(
+					id,
+					keyword.to_owned(),
+					created,
+					sentiment_to_float(&sentiment[0]),
+				);
 
-				self.db.insert(keyword, entry)?;
+				self.db.insert(entry).await?;
 			}
 		}
 		Ok(())
@@ -78,18 +78,21 @@ impl TwitterStreamRunner {
 			let message = message?;
 
 			if let StreamMessage::Tweet(tweet) = message {
-				let author = tweet.user.expect("no tweet author").name;
+				let id = tweet.id;
+				let created = tweet.created_at.timestamp();
 				let text = tweet.text;
-				let keyword = self.streams.iter().find(|key| text.contains(*key));
 
-				if let Some(keyword) = keyword {
+				for keyword in self.streams.iter().filter(|key| text.contains(*key)) {
 					let sentiment = self.sentiment_classifier.predict(&[text.as_str()]);
 
-					let mut entry =
-						database::Entry::new(author, text, sentiment_to_float(&sentiment[0]));
-					entry.set_timestamp(tweet.created_at.timestamp());
+					let entry = database::TweetSentiment::new(
+						id,
+						keyword.to_owned(),
+						created,
+						sentiment_to_float(&sentiment[0]),
+					);
 
-					self.db.insert(keyword, entry)?;
+					self.db.insert(entry).await?;
 				}
 			}
 		}

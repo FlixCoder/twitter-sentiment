@@ -7,9 +7,8 @@ edition = "2021"
 
 [dependencies]
 askama = "0.11.0"
-axum = "0.4.3"
-bincode = "2.0.0-beta.0"
-color-eyre = "0.5.11"
+axum = "0.4.4"
+color-eyre = "0.6.0"
 config = "0.11.0"
 derive_builder = "0.10.2"
 dotenv = "0.15.0"
@@ -17,6 +16,9 @@ egg-mode = "0.16.0"
 futures = "0.3.19"
 poloto = "3.13.1"
 rust-bert = "0.17.0"
-serde = { version = "1.0.133", features = ["derive"] }
-time = { version = "0.3.5", features = ["formatting"] }
+serde = { version = "1.0.135", features = ["derive"] }
+sqlx = { version = "0.5.10", features = ["runtime-tokio-native-tls", "postgres", "macros", "migrate", "offline"] }
+time = { version = "0.3.6", features = ["formatting"] }
 tokio = { version = "1.15.0", features = ["full"] }
+tracing = "0.1.29"
+tracing-subscriber = "0.3.6"

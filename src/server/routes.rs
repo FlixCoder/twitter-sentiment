@@ -13,7 +13,7 @@ use crate::{data, SentimentDB, Settings};
 pub async fn list_keywords(
 	Extension(db): Extension<Arc<SentimentDB>>,
 ) -> Result<Html<String>, ServerError> {
-	let mut keywords = db.keywords()?;
+	let mut keywords = db.keywords().await?;
 	keywords.sort();
 
 	let keywords = templates::ListKeywords { keywords };
@@ -31,7 +31,7 @@ pub async fn exp_moving_avg(
 	Path(keyword): Path<String>,
 	Query(params): Query<QueryAlpha>,
 ) -> Result<Svg, ServerError> {
-	let entries = db.get(&keyword).map_err(ServerError::not_found)?;
+	let entries = db.get(&keyword).await.map_err(ServerError::not_found)?;
 	let alpha = params.alpha.unwrap_or(settings.default_alpha);
 	let points = data::exp_moving_avg(&entries, alpha);
 
