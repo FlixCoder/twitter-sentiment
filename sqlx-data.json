@@ -1,0 +1,94 @@
+{
+  "db": "PostgreSQL",
+  "1c5a186707f4a2426016b9517e511bc564094e9b4ea8324c8b25cf9037bc71c0": {
+    "query": "SELECT EXISTS (\n\t\t\t\tSELECT keyword FROM tweet_sentiment WHERE keyword = $1\n\t\t\t)",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "exists",
+          "type_info": "Bool"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Text"
+        ]
+      },
+      "nullable": [
+        null
+      ]
+    }
+  },
+  "4755cba0cce7246c0f826b34ba246948168f2904dcd45a6a8cf28cf26ddf0c2e": {
+    "query": "SELECT DISTINCT keyword FROM tweet_sentiment",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "keyword",
+          "type_info": "Varchar"
+        }
+      ],
+      "parameters": {
+        "Left": []
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
+  "b045a81b39aa2762289818f30d96852d81b1b41fdc55a287ec0ff76a645c9d10": {
+    "query": "INSERT INTO tweet_sentiment\n\t\t\t\t(id, keyword, created, sentiment)\n\t\t\t\tVALUES ($1, $2, $3, $4)\n\t\t\t",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Varchar",
+          "Int8",
+          "Float8"
+        ]
+      },
+      "nullable": []
+    }
+  },
+  "c554882d1b8a6bfa179eea167064f67ce928dfb2d66965dadb7f9d6d8a5a2263": {
+    "query": "SELECT id, keyword, created, sentiment FROM tweet_sentiment\n\t\t\t\tWHERE keyword = $1\n\t\t\t\tORDER BY created ASC\n\t\t\t",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 1,
+          "name": "keyword",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 2,
+          "name": "created",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 3,
+          "name": "sentiment",
+          "type_info": "Float8"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Text"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false
+      ]
+    }
+  }
+}

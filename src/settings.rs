@@ -6,8 +6,6 @@ use serde::{Deserialize, Serialize};
 /// This app's configuration
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Settings {
-	/// DB location
-	pub db_path: String,
 	/// Webserver bind address and port
 	pub bind: String,
 	/// Words to track via Twitter streams

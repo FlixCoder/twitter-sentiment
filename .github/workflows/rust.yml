@@ -9,6 +9,9 @@ jobs:
   check:
     name: Check and Test
     runs-on: ubuntu-latest
+    
+    env:
+      SQLX_OFFLINE: 1
 
     steps:
     - uses: actions/checkout@v2
