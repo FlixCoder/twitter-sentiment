@@ -11,14 +11,11 @@ use tokio::{runtime::Runtime, task};
 use twitter_sentiment::*;
 
 // TODO:
-// - use real DB and docker
 // - add tracing + logging
-// - graceful shutdown
-// - more data methods
+// - more graphs (e.g. number of tweets) + more data methods (moving average)
 // - multiple keywords in a graph
 // - better HTML views
 // - add lints
-// - add pre-commit?
 // - clean up? (add traits for things?)
 
 fn main() -> Result<()> {
