@@ -1,4 +1,4 @@
-FROM docker.io/rust:latest as builder
+FROM docker.io/rust:slim-bullseye as builder
 ARG CARGO_NET_GIT_FETCH_WITH_CLI=true
 ARG SQLX_OFFLINE=1
 
@@ -13,8 +13,13 @@ COPY . /app
 WORKDIR /app
 RUN cargo build --release
 
-FROM debian:11-slim
-RUN apt update && apt install ca-certificates -y
+
+FROM debian:bullseye-slim
+RUN apt update && apt install -y ca-certificates libgomp1
+
+COPY --from=builder /app/target/release/build/torch-sys-*/out/libtorch/libtorch/lib /usr/local/lib
+ENV LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
+
 RUN mkdir -p /opt/app
 WORKDIR /opt/app
 COPY --from=builder /app/target/release/twitter-sentiment /usr/local/bin/twitter-sentiment
