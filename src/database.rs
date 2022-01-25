@@ -87,9 +87,11 @@ impl SentimentDB {
 
 	/// List all keywords in the database
 	pub async fn keywords(&self) -> Result<Vec<String>> {
-		let keywords = sqlx::query_scalar!(r#"SELECT DISTINCT keyword FROM tweet_sentiment"#)
-			.fetch_all(&self.pool)
-			.await?;
+		let keywords = sqlx::query_scalar!(
+			r#"SELECT DISTINCT keyword FROM tweet_sentiment ORDER BY keyword ASC"#
+		)
+		.fetch_all(&self.pool)
+		.await?;
 		Ok(keywords)
 	}
 }

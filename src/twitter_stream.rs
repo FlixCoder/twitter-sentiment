@@ -35,11 +35,15 @@ impl TwitterStreamRunner {
 	}
 
 	/// Predict sentiment of some texts
-	fn predict_sentiment<'a>(&self, texts: &[&'a str]) -> Vec<Sentiment> {
-		task::block_in_place(|| {
-			let classifier = self.sentiment_classifier.lock().expect("access sentiment classifier");
+	async fn predict_sentiment(&self, texts: Vec<String>) -> Result<Vec<Sentiment>> {
+		let sentiment_classifier = self.sentiment_classifier.clone();
+		let predictions = task::spawn_blocking(move || {
+			let texts: Vec<&str> = texts.iter().map(String::as_str).collect();
+			let classifier = sentiment_classifier.lock().expect("access sentiment classifier");
 			classifier.predict(texts)
 		})
+		.await?;
+		Ok(predictions)
 	}
 
 	/// If the database for a keyword is empty, fill it with some search results
@@ -62,7 +66,7 @@ impl TwitterStreamRunner {
 			for tweet in tweets.response {
 				let id = tweet.id;
 				let created = tweet.created_at.timestamp();
-				let sentiment = self.predict_sentiment(&[tweet.text.as_str()]);
+				let sentiment = self.predict_sentiment(vec![tweet.text]).await?;
 
 				let entry = database::TweetSentiment::new(
 					id,
@@ -92,8 +96,12 @@ impl TwitterStreamRunner {
 				let created = tweet.created_at.timestamp();
 				let text = tweet.text;
 
-				for keyword in self.streams.iter().filter(|key| text.contains(*key)) {
-					let sentiment = self.predict_sentiment(&[text.as_str()]);
+				for keyword in self
+					.streams
+					.iter()
+					.filter(|key| text.to_lowercase().contains(&key.to_lowercase()))
+				{
+					let sentiment = self.predict_sentiment(vec![text.clone()]).await?;
 
 					let entry = database::TweetSentiment::new(
 						id,
