@@ -1,17 +1,32 @@
 //! Configuration module
 
 use config::{ConfigError, Environment, File};
-use serde::{Deserialize, Serialize};
+use serde::{de::Error, Deserialize, Deserializer};
+use tracing::{metadata::ParseLevelError, Level};
 
 /// This app's configuration
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct Settings {
 	/// Webserver bind address and port
 	pub bind: String,
+	/// Logging level
+	#[serde(deserialize_with = "deserialize_level")]
+	pub log_level: Level,
 	/// Words to track via Twitter streams
 	pub track_tweets: Vec<String>,
 	/// Default alpha value for exponential moving average
 	pub default_alpha: f64,
+}
+
+/// Deserialize a Level
+fn deserialize_level<'de, D>(deserializer: D) -> Result<Level, D::Error>
+where
+	D: Deserializer<'de>,
+{
+	let log_level = String::deserialize(deserializer)?
+		.parse()
+		.map_err(|err: ParseLevelError| D::Error::custom(err.to_string()))?;
+	Ok(log_level)
 }
 
 impl Settings {

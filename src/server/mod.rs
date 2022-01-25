@@ -38,6 +38,7 @@ impl Server {
 	}
 
 	/// Run the webserver
+	#[tracing::instrument(level = "debug", err, skip_all)]
 	pub async fn run(self) -> Result<()> {
 		let app = Self::routes()
 			.layer(AddExtensionLayer::new(self.db))

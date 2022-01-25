@@ -4,20 +4,29 @@ use color_eyre::{eyre::eyre, Result};
 use futures::future::try_join_all;
 use sqlx::PgPool;
 use tokio::task;
+use tracing_subscriber::EnvFilter;
 use twitter_sentiment::*;
 
 // TODO:
-// - add tracing + logging
+// - add logging
+// - proper error handling
+// - add lints
+// - clean up? (add traits for things?)
 // - more graphs (e.g. number of tweets) + more data methods (moving average)
 // - multiple keywords in a graph
 // - better HTML views
-// - add lints
-// - clean up? (add traits for things?)
 
 #[tokio::main]
+#[tracing::instrument(level = "debug", err, skip_all)]
 async fn main() -> Result<()> {
 	let config = Settings::read()?;
 	let server_addr = config.bind.parse()?;
+
+	let filter = EnvFilter::from_default_env()
+		.add_directive(config.log_level.into())
+		.add_directive("hyper=info".parse()?)
+		.add_directive("sqlx=warn".parse()?);
+	tracing_subscriber::fmt().with_env_filter(filter).init();
 
 	color_eyre::install()?;
 	dotenv::dotenv()?;

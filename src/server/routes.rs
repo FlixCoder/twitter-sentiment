@@ -10,6 +10,8 @@ use serde::Deserialize;
 use super::{error::ServerError, svg::Svg, templates};
 use crate::{data, SentimentDB, Settings};
 
+/// Shows page with list of keywords.
+#[tracing::instrument(level = "debug", err, skip_all)]
 pub async fn list_keywords(
 	Extension(db): Extension<Arc<SentimentDB>>,
 ) -> Result<Html<String>, ServerError> {
@@ -25,6 +27,8 @@ pub struct QueryAlpha {
 	alpha: Option<f64>,
 }
 
+/// Responds with a SVG graph for the given keyword and parameters.
+#[tracing::instrument(level = "debug", err, skip_all)]
 pub async fn exp_moving_avg(
 	Extension(db): Extension<Arc<SentimentDB>>,
 	Extension(settings): Extension<Arc<Settings>>,
