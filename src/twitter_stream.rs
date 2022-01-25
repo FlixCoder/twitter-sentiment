@@ -1,15 +1,17 @@
 //! Runner to receive the twitter streams and put sentiment data into the DB
 
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use color_eyre::Result;
 use derive_builder::Builder;
 use egg_mode::{search::ResultType, stream::StreamMessage, Token};
 use futures::StreamExt;
-use rust_bert::pipelines::sentiment::{Sentiment, SentimentModel, SentimentPolarity};
-use tokio::task;
+use rust_bert::pipelines::sentiment::{Sentiment, SentimentPolarity};
 
-use crate::database::{self, SentimentDB};
+use crate::{
+	database::{self, SentimentDB},
+	SentimentClassifier,
+};
 
 fn sentiment_to_float(sentiment: &Sentiment) -> f64 {
 	match sentiment.polarity {
@@ -19,13 +21,12 @@ fn sentiment_to_float(sentiment: &Sentiment) -> f64 {
 }
 
 /// Runner to receive the twitter streams and put sentiment data into the DB
-#[derive(Builder)]
+#[derive(Debug, Builder)]
 pub struct TwitterStreamRunner {
 	#[builder(setter(into))]
 	streams: Vec<String>,
 	token: Token,
-	// Needs mutex to be Send + Sync
-	sentiment_classifier: Arc<Mutex<SentimentModel>>,
+	sentiment_classifier: SentimentClassifier,
 	db: Arc<SentimentDB>,
 }
 
@@ -36,14 +37,7 @@ impl TwitterStreamRunner {
 
 	/// Predict sentiment of some texts
 	async fn predict_sentiment(&self, texts: Vec<String>) -> Result<Vec<Sentiment>> {
-		let sentiment_classifier = self.sentiment_classifier.clone();
-		let predictions = task::spawn_blocking(move || {
-			let texts: Vec<&str> = texts.iter().map(String::as_str).collect();
-			let classifier = sentiment_classifier.lock().expect("access sentiment classifier");
-			classifier.predict(texts)
-		})
-		.await?;
-		Ok(predictions)
+		self.sentiment_classifier.predict(texts).await
 	}
 
 	/// If the database for a keyword is empty, fill it with some search results
