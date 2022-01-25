@@ -18,6 +18,7 @@ impl TweetSentiment {
 	}
 
 	/// Save an entry to the database
+	#[tracing::instrument(level = "debug", err, skip(db))]
 	async fn insert(self, db: &PgPool) -> Result<()> {
 		sqlx::query!(
 			r#"INSERT INTO tweet_sentiment
@@ -35,6 +36,7 @@ impl TweetSentiment {
 	}
 
 	/// Get the entries for a given keyword
+	#[tracing::instrument(level = "debug", err, skip(db))]
 	async fn with_keyword(db: &PgPool, keyword: &str) -> Result<Vec<Self>> {
 		let entries = sqlx::query_as!(
 			TweetSentiment,
@@ -63,16 +65,19 @@ impl SentimentDB {
 	}
 
 	/// Save an entry to the database
+	#[tracing::instrument(level = "debug", err, skip(self))]
 	pub async fn insert(&self, entry: TweetSentiment) -> Result<()> {
 		entry.insert(&self.pool).await
 	}
 
 	/// Get the entries for a given keyword
+	#[tracing::instrument(level = "debug", err, skip(self))]
 	pub async fn get(&self, keyword: &str) -> Result<Vec<TweetSentiment>> {
 		TweetSentiment::with_keyword(&self.pool, keyword).await
 	}
 
 	/// Checks if a given keyword exists in the database
+	#[tracing::instrument(level = "debug", err, skip(self))]
 	pub async fn exists(&self, keyword: &str) -> Result<bool> {
 		let exists = sqlx::query_scalar!(
 			r#"SELECT EXISTS (
@@ -86,6 +91,7 @@ impl SentimentDB {
 	}
 
 	/// List all keywords in the database
+	#[tracing::instrument(level = "debug", err, skip(self))]
 	pub async fn keywords(&self) -> Result<Vec<String>> {
 		let keywords = sqlx::query_scalar!(
 			r#"SELECT DISTINCT keyword FROM tweet_sentiment ORDER BY keyword ASC"#

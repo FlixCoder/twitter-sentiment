@@ -41,6 +41,7 @@ impl TwitterStreamRunner {
 	}
 
 	/// If the database for a keyword is empty, fill it with some search results
+	#[tracing::instrument(level = "debug", err, skip_all)]
 	pub async fn save_search_results(&self) -> Result<()> {
 		for keyword in self.streams.iter() {
 			if self.db.exists(keyword).await? {
@@ -77,6 +78,7 @@ impl TwitterStreamRunner {
 
 	/// Listen to Twitter's tweet streams for the keywords and save the entries
 	/// in the DB
+	#[tracing::instrument(level = "debug", err, skip_all)]
 	pub async fn run(self) -> Result<()> {
 		self.save_search_results().await?;
 

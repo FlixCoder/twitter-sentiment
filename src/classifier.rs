@@ -29,6 +29,7 @@ impl SentimentClassifier {
 	}
 
 	/// The classification runner itself
+	#[tracing::instrument(level = "debug", err, skip_all)]
 	fn runner(receiver: mpsc::Receiver<Message>) -> Result<()> {
 		// Needs to be in sync runtime, async doesn't work
 		let model = SentimentModel::new(SentimentConfig::default())?;
@@ -43,6 +44,7 @@ impl SentimentClassifier {
 	}
 
 	/// Make the runner predict a sample and return the result
+	#[tracing::instrument(level = "debug", err, skip_all)]
 	pub async fn predict(&self, texts: Vec<String>) -> Result<Vec<Sentiment>> {
 		let (sender, receiver) = oneshot::channel();
 		task::block_in_place(|| self.sender.send((texts, sender)))
