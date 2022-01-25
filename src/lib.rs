@@ -3,12 +3,14 @@ use std::env;
 use color_eyre::Result;
 use egg_mode::{KeyPair, Token};
 
+mod classifier;
 mod data;
 mod database;
 mod server;
 mod settings;
 mod twitter_stream;
 
+pub use classifier::SentimentClassifier;
 pub use database::SentimentDB;
 pub use server::Server;
 pub use settings::Settings;
