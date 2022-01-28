@@ -6,6 +6,7 @@ use axum::{
 	response::Html,
 };
 use serde::Deserialize;
+use tracing::info;
 
 use super::{error::ServerError, svg::Svg, templates};
 use crate::{data, SentimentDB, Settings};
@@ -15,6 +16,8 @@ use crate::{data, SentimentDB, Settings};
 pub async fn list_keywords(
 	Extension(db): Extension<Arc<SentimentDB>>,
 ) -> Result<Html<String>, ServerError> {
+	info!("List of keywords is being retrieved.");
+
 	let mut keywords = db.keywords().await?;
 	keywords.sort();
 
@@ -35,6 +38,8 @@ pub async fn exp_moving_avg(
 	Path(keyword): Path<String>,
 	Query(params): Query<QueryAlpha>,
 ) -> Result<Svg, ServerError> {
+	info!("SVG graph of exponential moving average is retrieved.");
+
 	let entries = db.get(&keyword).await.map_err(ServerError::not_found)?;
 	let alpha = params.alpha.unwrap_or(settings.default_alpha);
 	let points = data::exp_moving_avg(&entries, alpha);

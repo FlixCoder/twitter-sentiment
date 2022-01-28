@@ -8,6 +8,7 @@ use std::{
 use color_eyre::{eyre::eyre, Result};
 use rust_bert::pipelines::sentiment::{Sentiment, SentimentConfig, SentimentModel};
 use tokio::{sync::oneshot, task};
+use tracing::info;
 
 /// Message type for internal channel, passing around texts and return value
 /// senders
@@ -31,6 +32,7 @@ impl SentimentClassifier {
 	/// The classification runner itself
 	#[tracing::instrument(level = "debug", err, skip_all)]
 	fn runner(receiver: mpsc::Receiver<Message>) -> Result<()> {
+		info!("Sentiment classifier runner starting.");
 		// Needs to be in sync runtime, async doesn't work
 		let model = SentimentModel::new(SentimentConfig::default())?;
 
@@ -40,6 +42,7 @@ impl SentimentClassifier {
 			sender.send(sentiments).map_err(|_| eyre!("Sending oneshot message failed!"))?;
 		}
 
+		info!("Sentiment classifier runner stopped.");
 		Ok(())
 	}
 
