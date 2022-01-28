@@ -7,6 +7,7 @@ use derive_builder::Builder;
 use egg_mode::{search::ResultType, stream::StreamMessage, Token};
 use futures::StreamExt;
 use rust_bert::pipelines::sentiment::{Sentiment, SentimentPolarity};
+use tracing::{error, info};
 
 use crate::{
 	database::{self, SentimentDB},
@@ -43,6 +44,7 @@ impl TwitterStreamRunner {
 	/// If the database for a keyword is empty, fill it with some search results
 	#[tracing::instrument(level = "debug", err, skip_all)]
 	pub async fn save_search_results(&self) -> Result<()> {
+		info!("Retrieving Twitter search results.");
 		for keyword in self.streams.iter() {
 			if self.db.exists(keyword).await? {
 				continue;
@@ -76,12 +78,25 @@ impl TwitterStreamRunner {
 		Ok(())
 	}
 
-	/// Listen to Twitter's tweet streams for the keywords and save the entries
-	/// in the DB
+	/// Runner for retrieving/receiving tweets from Twitter. Save search results
+	/// for new keywords and listen to Twitter's tweet streams for the keywords
+	/// and save the entries in the DB.
 	#[tracing::instrument(level = "debug", err, skip_all)]
 	pub async fn run(self) -> Result<()> {
 		self.save_search_results().await?;
 
+		while let Err(err) = self.internal_run().await {
+			error!("Reconnecting after error in TwitterStreamRunner: {}", err);
+		}
+
+		Ok(())
+	}
+
+	/// Listen to Twitter's tweet streams for the keywords and save the entries
+	/// in the DB
+	#[tracing::instrument(level = "debug", err, skip_all)]
+	async fn internal_run(&self) -> Result<()> {
+		info!("Starting Twitter stream listener.");
 		let mut stream =
 			egg_mode::stream::filter().track(&self.streams).language(&["en"]).start(&self.token);
 		while let Some(message) = stream.next().await {
@@ -111,6 +126,7 @@ impl TwitterStreamRunner {
 			}
 		}
 
+		info!("Twitter stream listener stopped.");
 		Ok(())
 	}
 }

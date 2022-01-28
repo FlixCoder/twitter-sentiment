@@ -1,15 +1,13 @@
 use std::{env, sync::Arc};
 
-use color_eyre::{eyre::eyre, Result};
-use futures::future::try_join_all;
+use color_eyre::Result;
+use futures::future;
 use sqlx::PgPool;
 use tokio::task;
 use tracing_subscriber::EnvFilter;
 use twitter_sentiment::*;
 
 // TODO:
-// - add logging
-// - proper error handling
 // - add lints
 // - clean up? (add traits for things?)
 // - more graphs (e.g. number of tweets) + more data methods (moving average)
@@ -52,11 +50,17 @@ async fn main() -> Result<()> {
 		Server::builder().bind(server_addr).db(db.clone()).config(Arc::new(config)).build()?;
 
 	// Run all tasks/jobs/runners
-	let handles = vec![task::spawn(twitter_streams.run()), task::spawn(server.run())];
-	for res in try_join_all(handles).await? {
-		res?;
+	let handles = vec![
+		task::spawn(twitter_streams.run()),
+		task::spawn(server.run()),
+		task::spawn_blocking(move || {
+			classifier_runner.join().expect("Join error on classifier thread!")
+		}),
+	];
+	let (first_res, _, others) = future::select_all(handles).await;
+	for handle in others {
+		handle.abort();
 	}
-	task::block_in_place(|| classifier_runner.join())
-		.map_err(|_| eyre!("Join error on classifier thread!"))??;
+	first_res??;
 	Ok(())
 }
