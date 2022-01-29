@@ -3,11 +3,11 @@
 
 //! All essential functionality used for this service, split into modules.
 //!
-//! - The webserver is in [`server`].
-//! - Database access is defined in [`database`].
-//! - Sentiment classification is in [`classifier`].
-//! - Data handling and transformation is in [`data`].
-//! - Settings are in [`settings`].
+//! - The webserver is in `server`.
+//! - Database access is defined in `database`.
+//! - Sentiment classification is in `classifier`.
+//! - Data handling and transformation is in `data`.
+//! - Settings are in `settings`.
 
 mod classifier;
 mod data;

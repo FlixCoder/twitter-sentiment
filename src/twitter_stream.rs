@@ -1,6 +1,6 @@
 //! Runner to receive the twitter streams and put sentiment data into the DB
 
-use std::sync::Arc;
+use std::{sync::Arc, time::Duration};
 
 use color_eyre::Result;
 use derive_builder::Builder;
@@ -87,7 +87,8 @@ impl TwitterStreamRunner {
 		self.save_search_results().await?;
 
 		while let Err(err) = self.internal_run().await {
-			error!("Reconnecting after error in TwitterStreamRunner: {}", err);
+			error!("Reconnecting soon after error in TwitterStreamRunner: {}", err);
+			tokio::time::sleep(Duration::from_secs(120)).await;
 		}
 
 		Ok(())
