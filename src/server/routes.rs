@@ -39,19 +39,37 @@ pub async fn exp_moving_avg(
 	Query(params): Query<QueryAlpha>,
 ) -> Result<Svg, ServerError> {
 	info!("SVG graph of exponential moving average is retrieved.");
+	let alpha = params.alpha.unwrap_or(settings.web_defaults.alpha);
 
 	let entries = db.get(&keyword).await.map_err(ServerError::not_found)?;
-	let alpha = params.alpha.unwrap_or(settings.default_alpha);
 	let points = data::exp_moving_avg(&entries, alpha);
 
-	let plot = poloto::plot("Sentiment - Exponential moving average", "Timestamp", "Sentiment")
-		.ymarker(-1.0)
-		.ymarker(1.0)
-		.line(keyword, &points)
-		.xinterval_fmt(data::timestamp_fmt)
-		.move_into();
-	let mut svg = String::new();
-	poloto::simple_theme_dark(&mut svg, plot)?;
+	let plot = data::plot("Sentiment - Exponential moving average", &keyword, &points)?;
+	Ok(Svg(plot))
+}
 
-	Ok(Svg(svg))
+#[derive(Debug, Deserialize)]
+pub struct QueryWindow {
+	window: Option<usize>,
+}
+
+/// Responds with a SVG graph for the given keyword and parameters.
+#[tracing::instrument(level = "debug", err, skip_all)]
+pub async fn moving_avg(
+	Extension(db): Extension<Arc<SentimentDB>>,
+	Extension(settings): Extension<Arc<Settings>>,
+	Path(keyword): Path<String>,
+	Query(params): Query<QueryWindow>,
+) -> Result<Svg, ServerError> {
+	info!("SVG graph of moving average is retrieved.");
+	let window = params.window.unwrap_or(settings.web_defaults.window);
+	if window == 0 {
+		return Err(ServerError::bad_request("Window size of 0 is not allowed!"));
+	}
+
+	let entries = db.get(&keyword).await.map_err(ServerError::not_found)?;
+	let points = data::moving_avg(&entries, window);
+
+	let plot = data::plot("Sentiment - Moving average", &keyword, &points)?;
+	Ok(Svg(plot))
 }

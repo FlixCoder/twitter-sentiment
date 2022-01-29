@@ -32,4 +32,8 @@ impl ServerError {
 	pub fn not_found<T: ToString>(msg: T) -> Self {
 		Self { status_code: StatusCode::NOT_FOUND, error_msg: msg.to_string() }
 	}
+
+	pub fn bad_request<T: ToString>(msg: T) -> Self {
+		Self { status_code: StatusCode::BAD_REQUEST, error_msg: msg.to_string() }
+	}
 }

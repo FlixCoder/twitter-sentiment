@@ -14,8 +14,17 @@ pub struct Settings {
 	pub log_level: Level,
 	/// Words to track via Twitter streams
 	pub track_tweets: Vec<String>,
+	/// Defaults for server routes
+	pub web_defaults: WebDefaults,
+}
+
+/// Defaults for webserver
+#[derive(Debug, Clone, Deserialize)]
+pub struct WebDefaults {
 	/// Default alpha value for exponential moving average
-	pub default_alpha: f64,
+	pub alpha: f64,
+	/// Default window size for moving average
+	pub window: usize,
 }
 
 /// Deserialize a Level
@@ -30,7 +39,7 @@ where
 }
 
 impl Settings {
-	/// Read configuration from `config.yaml` by default. Calls [`read_from`]
+	/// Read configuration from `config.yaml` by default. Calls `read_from`.
 	#[inline]
 	pub fn read() -> Result<Self, ConfigError> {
 		Self::read_from("config.yaml")

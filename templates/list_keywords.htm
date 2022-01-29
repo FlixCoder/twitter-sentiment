@@ -1,12 +1,45 @@
+<!DOCTYPE html>
 <html>
-<body>
-	<center>
-		<h3>Available keywords</h3>
-		<div>
-			{% for keyword in keywords %}
-			<a href="/svg/{{ keyword }}/ema">{{ keyword }}</a><br>
-			{% endfor %}
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>Twitter Sentiment - Keywords</title>
+		<style>
+			.container {
+				width: 100%;
+				display: flex;
+				flex-direction: row;
+				flex-wrap: wrap;
+				justify-content: space-evenly;
+				align-items: flex-start;
+				align-content: space-around;
+			}
+			.item {
+				flex: 0 1 auto;
+				align-self: flex-start;
+			}
+			.title {
+				width: 95vw;
+				text-align: center;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="container">
+			<div class="item title">
+				<h2>Available graphs for keywords</h3>
+			</div>
+			<div class="item">
+				<h4>Exponential moving average</h4>
+				{% for keyword in keywords %}
+				<a href="/svg/{{ keyword }}/ema">{{ keyword }}</a><br>
+				{% endfor %}
+			</div>
+			<div class="item">
+				<h4>Moving average</h4>
+				{% for keyword in keywords %}
+				<a href="/svg/{{ keyword }}/ma">{{ keyword }}</a><br>
+				{% endfor %}
+			</div>
 		</div>
-	</center>
-</body>	
+	</body>	
 </html>

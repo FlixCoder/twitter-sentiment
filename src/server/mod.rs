@@ -35,6 +35,7 @@ impl Server {
 		Router::new()
 			.route("/", get(routes::list_keywords))
 			.route("/svg/:keyword/ema", get(routes::exp_moving_avg))
+			.route("/svg/:keyword/ma", get(routes::moving_avg))
 	}
 
 	/// Run the webserver

@@ -8,8 +8,9 @@ use tracing_subscriber::EnvFilter;
 use twitter_sentiment::*;
 
 // TODO:
-// - clean up? (add traits for things?)
-// - more graphs (e.g. number of tweets) + more data methods (moving average)
+// - check flamegraph
+// - more graphs (e.g. number of tweets) + more data methods (e.g. indepedentent
+//   of tweet number for higher performace)
 // - multiple keywords in a graph
 // - better HTML views
 // - add tests
