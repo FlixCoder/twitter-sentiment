@@ -1,15 +1,15 @@
 //! Webserver to serve the Twitter sentiment info
 
+mod error;
+mod routes;
+mod svg;
+mod templates;
+
 use std::{net::SocketAddr, sync::Arc};
 
 use axum::{routing::get, AddExtensionLayer, Router};
 use color_eyre::Result;
 use derive_builder::Builder;
-
-mod error;
-mod routes;
-mod svg;
-mod templates;
 
 use crate::{SentimentDB, Settings};
 

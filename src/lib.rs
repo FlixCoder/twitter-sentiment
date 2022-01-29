@@ -1,7 +1,13 @@
-use std::env;
+#![deny(trivial_casts, trivial_numeric_casts, unused_extern_crates)]
+#![warn(missing_debug_implementations, unused_qualifications, missing_docs, dead_code)]
 
-use color_eyre::Result;
-use egg_mode::{KeyPair, Token};
+//! All essential functionality used for this service, split into modules.
+//!
+//! - The webserver is in [`server`].
+//! - Database access is defined in [`database`].
+//! - Sentiment classification is in [`classifier`].
+//! - Data handling and transformation is in [`data`].
+//! - Settings are in [`settings`].
 
 mod classifier;
 mod data;
@@ -10,11 +16,15 @@ mod server;
 mod settings;
 mod twitter_stream;
 
-pub use classifier::SentimentClassifier;
-pub use database::SentimentDB;
-pub use server::Server;
-pub use settings::Settings;
-pub use twitter_stream::TwitterStreamRunner;
+use std::env;
+
+use color_eyre::Result;
+use egg_mode::{KeyPair, Token};
+
+pub use self::{
+	classifier::SentimentClassifier, database::SentimentDB, server::Server, settings::Settings,
+	twitter_stream::TwitterStreamRunner,
+};
 
 /// Obtains a bearer token to use for egg-mode from the secrets in the env
 /// variables
