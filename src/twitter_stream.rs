@@ -32,6 +32,7 @@ pub struct TwitterStreamRunner {
 }
 
 impl TwitterStreamRunner {
+	/// Get a builder to create an instance.
 	pub fn builder() -> TwitterStreamRunnerBuilder {
 		TwitterStreamRunnerBuilder::default()
 	}

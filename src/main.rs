@@ -8,11 +8,11 @@ use tracing_subscriber::EnvFilter;
 use twitter_sentiment::*;
 
 // TODO:
-// - add lints
 // - clean up? (add traits for things?)
 // - more graphs (e.g. number of tweets) + more data methods (moving average)
 // - multiple keywords in a graph
 // - better HTML views
+// - add tests
 
 #[tokio::main]
 #[tracing::instrument(level = "debug", err, skip_all)]
