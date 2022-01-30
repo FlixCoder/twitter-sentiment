@@ -4,4 +4,4 @@ log_level: INFO
 track_tweets: ["twitter"]
 web_defaults:
   alpha: 0.995
-  window: 100
+  window: 250

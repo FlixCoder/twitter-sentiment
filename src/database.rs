@@ -65,7 +65,7 @@ impl SentimentDB {
 	}
 
 	/// Save an entry to the database
-	#[tracing::instrument(level = "debug", err, skip(self))]
+	#[tracing::instrument(level = "debug", err, skip_all)]
 	pub async fn insert(&self, entry: TweetSentiment) -> Result<()> {
 		entry.insert(&self.pool).await
 	}
