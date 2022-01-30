@@ -2,8 +2,6 @@
 
 use std::fmt::Formatter;
 
-use time::OffsetDateTime;
-
 use crate::database::TweetSentiment;
 
 /// Make a plot of data points. Returns a string with a SVG.
@@ -29,9 +27,8 @@ pub fn timestamp_fmt(
 	timestamp: f64,
 	_step_size: Option<f64>,
 ) -> std::fmt::Result {
-	let time =
-		OffsetDateTime::from_unix_timestamp(timestamp as i64).expect("timestamp to OffsetDateTime");
-	write!(f, "{}", time.ordinal())
+	let day = timestamp / (24 * 60 * 60) as f64;
+	write!(f, "{:.1}", day)
 }
 
 /// Transform a vector of entries to exponential moving average values.
