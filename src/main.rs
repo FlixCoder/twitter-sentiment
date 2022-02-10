@@ -23,6 +23,8 @@ async fn main() -> Result<()> {
 	let filter = EnvFilter::from_default_env()
 		.add_directive(config.log_level.into())
 		.add_directive("hyper=info".parse()?)
+		.add_directive("mio=info".parse()?)
+		.add_directive("want=info".parse()?)
 		.add_directive("sqlx=error".parse()?);
 	tracing_subscriber::fmt().with_env_filter(filter).init();
 

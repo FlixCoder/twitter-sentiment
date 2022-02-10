@@ -4,10 +4,10 @@ use std::{sync::Arc, time::Duration};
 
 use color_eyre::Result;
 use derive_builder::Builder;
-use egg_mode::{search::ResultType, stream::StreamMessage, Token};
-use futures::StreamExt;
+use egg_mode::{search::ResultType, stream::StreamMessage, tweet::Tweet, Token};
+use futures::TryStreamExt;
 use rust_bert::pipelines::sentiment::{Sentiment, SentimentPolarity};
-use tracing::{error, info};
+use tracing::{error, info, trace};
 
 use crate::{
 	database::{self, SentimentDB},
@@ -37,11 +37,6 @@ impl TwitterStreamRunner {
 		TwitterStreamRunnerBuilder::default()
 	}
 
-	/// Predict sentiment of some texts
-	async fn predict_sentiment(&self, texts: Vec<String>) -> Result<Vec<Sentiment>> {
-		self.sentiment_classifier.predict(texts).await
-	}
-
 	/// If the database for a keyword is empty, fill it with some search results
 	#[tracing::instrument(level = "debug", err, skip_all)]
 	pub async fn save_search_results(&self) -> Result<()> {
@@ -61,16 +56,17 @@ impl TwitterStreamRunner {
 				egg_mode::tweet::lookup(search.statuses.iter().map(|tweet| tweet.id), &self.token)
 					.await?;
 
-			for tweet in tweets.response {
+			let tweets = tweets.response;
+			let sentiments = self.predict_sentiment(&tweets).await?;
+			for (tweet, sentiment) in tweets.into_iter().zip(sentiments) {
 				let id = tweet.id;
 				let created = tweet.created_at.timestamp();
-				let sentiment = self.predict_sentiment(vec![tweet.text]).await?;
 
 				let entry = database::TweetSentiment::new(
 					id,
 					keyword.to_owned(),
 					created,
-					sentiment_to_float(&sentiment[0]),
+					sentiment_to_float(&sentiment),
 				);
 
 				self.db.insert(entry).await?;
@@ -99,36 +95,54 @@ impl TwitterStreamRunner {
 	#[tracing::instrument(level = "debug", err, skip_all)]
 	async fn internal_run(&self) -> Result<()> {
 		info!("Starting Twitter stream listener.");
-		let mut stream =
+		let stream =
 			egg_mode::stream::filter().track(&self.streams).language(&["en"]).start(&self.token);
-		while let Some(message) = stream.next().await {
-			let message = message?;
 
-			if let StreamMessage::Tweet(tweet) = message {
-				let id = tweet.id;
-				let created = tweet.created_at.timestamp();
-				let text = tweet.text;
-
-				for keyword in self
-					.streams
-					.iter()
-					.filter(|key| text.to_lowercase().contains(&key.to_lowercase()))
-				{
-					let sentiment = self.predict_sentiment(vec![text.clone()]).await?;
-
-					let entry = database::TweetSentiment::new(
-						id,
-						keyword.to_owned(),
-						created,
-						sentiment_to_float(&sentiment[0]),
-					);
-
-					self.db.insert(entry).await?;
+		stream
+			.try_filter_map(|tweet| async move {
+				if let StreamMessage::Tweet(inner) = tweet {
+					Ok(Some(inner))
+				} else {
+					Ok(None)
 				}
-			}
-		}
+			})
+			.try_chunks(16)
+			.map_err(color_eyre::Report::from)
+			.try_for_each_concurrent(3, |tweets| async move {
+				trace!("New Tweets incoming: {}", tweets.len());
+
+				let sentiments = self.predict_sentiment(&tweets).await?;
+				for (tweet, sentiment) in tweets.into_iter().zip(sentiments) {
+					let id = tweet.id;
+					let created = tweet.created_at.timestamp();
+					let text = tweet.text;
+
+					for keyword in self
+						.streams
+						.iter()
+						.filter(|key| text.to_lowercase().contains(&key.to_lowercase()))
+					{
+						let entry = database::TweetSentiment::new(
+							id,
+							keyword.to_owned(),
+							created,
+							sentiment_to_float(&sentiment),
+						);
+
+						self.db.insert(entry).await?;
+					}
+				}
+				Ok(())
+			})
+			.await?;
 
 		info!("Twitter stream listener stopped.");
 		Ok(())
+	}
+
+	/// Predict sentiment of some tweets
+	async fn predict_sentiment(&self, tweets: &[Tweet]) -> Result<Vec<Sentiment>> {
+		let texts = tweets.iter().map(|tweet| tweet.text.clone()).collect();
+		self.sentiment_classifier.predict(texts).await
 	}
 }
