@@ -11,6 +11,7 @@ use tracing::{error, info, trace};
 
 use crate::{
 	database::{self, SentimentDB},
+	settings::TwitterSettings,
 	SentimentClassifier,
 };
 
@@ -24,8 +25,7 @@ fn sentiment_to_float(sentiment: &Sentiment) -> f64 {
 /// Runner to receive the twitter streams and put sentiment data into the DB
 #[derive(Debug, Builder)]
 pub struct TwitterStreamRunner {
-	#[builder(setter(into))]
-	streams: Vec<String>,
+	config: TwitterSettings,
 	token: Token,
 	sentiment_classifier: SentimentClassifier,
 	db: Arc<SentimentDB>,
@@ -41,7 +41,7 @@ impl TwitterStreamRunner {
 	#[tracing::instrument(level = "debug", err, skip_all)]
 	pub async fn save_search_results(&self) -> Result<()> {
 		info!("Retrieving Twitter search results.");
-		for keyword in self.streams.iter() {
+		for keyword in self.config.track_tweets.iter() {
 			if self.db.exists(keyword).await? {
 				continue;
 			}
@@ -84,7 +84,7 @@ impl TwitterStreamRunner {
 
 		while let Err(err) = self.internal_run().await {
 			error!("Reconnecting soon after error in TwitterStreamRunner: {}", err);
-			tokio::time::sleep(Duration::from_secs(120)).await;
+			tokio::time::sleep(Duration::from_secs(self.config.secs_reconnect)).await;
 		}
 
 		Ok(())
@@ -95,8 +95,10 @@ impl TwitterStreamRunner {
 	#[tracing::instrument(level = "debug", err, skip_all)]
 	async fn internal_run(&self) -> Result<()> {
 		info!("Starting Twitter stream listener.");
-		let stream =
-			egg_mode::stream::filter().track(&self.streams).language(&["en"]).start(&self.token);
+		let stream = egg_mode::stream::filter()
+			.track(&self.config.track_tweets)
+			.language(&["en"])
+			.start(&self.token);
 
 		stream
 			.try_filter_map(|tweet| async move {
@@ -106,9 +108,9 @@ impl TwitterStreamRunner {
 					Ok(None)
 				}
 			})
-			.try_chunks(16)
+			.try_chunks(self.config.chunk_size)
 			.map_err(color_eyre::Report::from)
-			.try_for_each_concurrent(3, |tweets| async move {
+			.try_for_each_concurrent(self.config.concurrency, |tweets| async move {
 				trace!("New Tweets incoming: {}", tweets.len());
 
 				let sentiments = self.predict_sentiment(&tweets).await?;
@@ -118,7 +120,8 @@ impl TwitterStreamRunner {
 					let text = tweet.text;
 
 					for keyword in self
-						.streams
+						.config
+						.track_tweets
 						.iter()
 						.filter(|key| text.to_lowercase().contains(&key.to_lowercase()))
 					{

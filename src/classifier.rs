@@ -24,7 +24,7 @@ impl SentimentClassifier {
 	/// Spawn a classifier on a separate thread and return a classifier instance
 	/// to interact with it
 	pub fn spawn() -> (JoinHandle<Result<()>>, SentimentClassifier) {
-		let (sender, receiver) = mpsc::sync_channel(100);
+		let (sender, receiver) = mpsc::sync_channel(10);
 		let handle = thread::spawn(move || Self::runner(receiver));
 		(handle, SentimentClassifier { sender })
 	}

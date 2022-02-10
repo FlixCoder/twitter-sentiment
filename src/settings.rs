@@ -12,10 +12,23 @@ pub struct Settings {
 	/// Logging level
 	#[serde(deserialize_with = "deserialize_level")]
 	pub log_level: Level,
-	/// Words to track via Twitter streams
-	pub track_tweets: Vec<String>,
+	/// Twitter listener & runner settings
+	pub twitter: TwitterSettings,
 	/// Defaults for server routes
 	pub web_defaults: WebDefaults,
+}
+
+/// Twitter listener & processor settings
+#[derive(Debug, Clone, Deserialize)]
+pub struct TwitterSettings {
+	/// Words to track via Twitter streams
+	pub track_tweets: Vec<String>,
+	/// Concurrency of tweet classification
+	pub concurrency: usize,
+	/// Chunk size of tweets
+	pub chunk_size: usize,
+	/// Number of seconds to wait until reconnecting
+	pub secs_reconnect: u64,
 }
 
 /// Defaults for webserver

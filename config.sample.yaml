@@ -1,7 +1,11 @@
 # For more info take a look at documentation in the settings module.
 bind: "127.0.0.1:8080"
 log_level: INFO
-track_tweets: ["twitter"]
+twitter:
+  track_tweets: ["twitter"]
+  concurrency: 3
+  chunk_size: 16
+  secs_reconnect: 120
 web_defaults:
   alpha: 0.995
   window: 250
