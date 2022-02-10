@@ -17,7 +17,7 @@ use twitter_sentiment::*;
 #[tokio::main]
 #[tracing::instrument(level = "debug", err, skip_all)]
 async fn main() -> Result<()> {
-	let config = Settings::read()?;
+	let config = Arc::new(Settings::read()?);
 	let server_addr = config.bind.parse()?;
 
 	let filter = EnvFilter::from_default_env()
@@ -41,15 +41,14 @@ async fn main() -> Result<()> {
 	let token = twitter_access_token()?;
 	let (classifier_runner, sentiment_classifier) = SentimentClassifier::spawn();
 	let twitter_streams = TwitterStreamRunner::builder()
-		.streams(config.track_tweets.as_slice())
+		.config(config.twitter.clone())
 		.token(token)
 		.sentiment_classifier(sentiment_classifier)
 		.db(db.clone())
 		.build()?;
 
 	// Init webserver
-	let server =
-		Server::builder().bind(server_addr).db(db.clone()).config(Arc::new(config)).build()?;
+	let server = Server::builder().bind(server_addr).db(db).config(config).build()?;
 
 	// Run all tasks/jobs/runners
 	let handles = vec![
