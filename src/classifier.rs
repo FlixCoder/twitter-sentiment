@@ -8,7 +8,7 @@ use std::{
 use color_eyre::{eyre::eyre, Result};
 use rust_bert::pipelines::sentiment::{Sentiment, SentimentConfig, SentimentModel};
 use tokio::{sync::oneshot, task};
-use tracing::info;
+use tracing::{info, warn};
 
 /// Message type for internal channel, passing around texts and return value
 /// senders
@@ -39,7 +39,10 @@ impl SentimentClassifier {
 		while let Ok((texts, sender)) = receiver.recv() {
 			let texts: Vec<&str> = texts.iter().map(String::as_str).collect();
 			let sentiments = model.predict(texts);
-			sender.send(sentiments).map_err(|_| eyre!("Sending oneshot message failed!"))?;
+			let res = sender.send(sentiments);
+			if let Err(_lost) = res {
+				warn!("Sending sentiments results failed, receiver was closed!");
+			}
 		}
 
 		info!("Sentiment classifier runner stopped.");
