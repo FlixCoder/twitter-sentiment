@@ -81,7 +81,7 @@ impl SentimentDB {
 	pub async fn exists(&self, keyword: &str) -> Result<bool> {
 		let exists = sqlx::query_scalar!(
 			r#"SELECT EXISTS (
-				SELECT keyword FROM tweet_sentiment WHERE keyword = $1
+				SELECT 1 FROM tweet_sentiment WHERE keyword = $1
 			)"#,
 			keyword
 		)

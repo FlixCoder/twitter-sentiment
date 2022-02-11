@@ -1,7 +1,7 @@
 {
   "db": "PostgreSQL",
-  "1c5a186707f4a2426016b9517e511bc564094e9b4ea8324c8b25cf9037bc71c0": {
-    "query": "SELECT EXISTS (\n\t\t\t\tSELECT keyword FROM tweet_sentiment WHERE keyword = $1\n\t\t\t)",
+  "1ed816a172c5b4b238c1921a9a72418aba9bc595afec07ee6954b56f1b59ba9c": {
+    "query": "SELECT EXISTS (\n\t\t\t\tSELECT 1 FROM tweet_sentiment WHERE keyword = $1\n\t\t\t)",
     "describe": {
       "columns": [
         {
