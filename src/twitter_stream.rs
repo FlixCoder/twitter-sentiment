@@ -5,7 +5,7 @@ use std::{sync::Arc, time::Duration};
 use color_eyre::Result;
 use derive_builder::Builder;
 use egg_mode::{search::ResultType, stream::StreamMessage, tweet::Tweet, Token};
-use futures::TryStreamExt;
+use futures::{future, TryStreamExt};
 use rust_bert::pipelines::sentiment::{Sentiment, SentimentPolarity};
 use tracing::{error, info, trace};
 
@@ -100,31 +100,31 @@ impl TwitterStreamRunner {
 			.language(&["en"])
 			.start(&self.token);
 
+		let keywords: Vec<String> =
+			self.config.track_tweets.iter().map(|s| s.to_lowercase()).collect();
+
 		stream
-			.try_filter_map(|tweet| async move {
-				if let StreamMessage::Tweet(inner) = tweet {
-					Ok(Some(inner))
-				} else {
-					Ok(None)
+			.try_filter_map(|msg| {
+				if let StreamMessage::Tweet(tweet) = msg {
+					let text = tweet.text.to_lowercase();
+					if keywords.iter().any(|keyword| text.contains(keyword)) {
+						return future::ready(Ok(Some(tweet)));
+					}
 				}
+				future::ready(Ok(None))
 			})
 			.try_chunks(self.config.chunk_size)
 			.map_err(color_eyre::Report::from)
-			.try_for_each_concurrent(self.config.concurrency, |tweets| async move {
-				trace!("New Tweets incoming: {}", tweets.len());
+			.try_for_each_concurrent(self.config.concurrency, |tweets| async {
+				trace!("New incoming Tweets: {}", tweets.len());
 
 				let sentiments = self.predict_sentiment(&tweets).await?;
 				for (tweet, sentiment) in tweets.into_iter().zip(sentiments) {
 					let id = tweet.id;
 					let created = tweet.created_at.timestamp();
-					let text = tweet.text;
+					let text = tweet.text.to_lowercase();
 
-					for keyword in self
-						.config
-						.track_tweets
-						.iter()
-						.filter(|key| text.to_lowercase().contains(&key.to_lowercase()))
-					{
+					for keyword in keywords.iter().filter(|keyword| text.contains(*keyword)) {
 						let entry = database::TweetSentiment::new(
 							id,
 							keyword.to_owned(),
